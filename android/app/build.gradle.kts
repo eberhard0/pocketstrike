@@ -43,16 +43,6 @@ android {
         }
     }
 
-    packaging {
-        jniLibs {
-            // Local Dream's image engine is an executable shipped as
-            // libstable_diffusion_core.so (see the workflow): it has to be
-            // extracted to nativeLibraryDir to be run, and left as built.
-            useLegacyPackaging = true
-            keepDebugSymbols += "**/libstable_diffusion_core.so"
-        }
-    }
-
     buildTypes {
         release {
             signingConfig = if (keystorePropertiesFile.exists()) {

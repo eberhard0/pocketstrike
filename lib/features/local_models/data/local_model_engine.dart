@@ -607,21 +607,19 @@ class LocalAIProvider implements AIProvider {
       yield const StreamDoneEvent();
     } on LocalDreamException catch (e) {
       stopwatch.stop();
-      switch (e.action) {
-        case ImageEngineAction.allowFilesAccess:
-          await LocalDreamBridge.openFilesAccessSettings();
-          yield TextDeltaEvent('🎨 ${e.message}');
-          yield const StreamDoneEvent();
-        case ImageEngineAction.openLocalDream:
-          final opened = await LocalDreamBridge.open();
-          yield TextDeltaEvent(opened
-              ? '🎨 ${e.message}'
-              : '🎨 Images use **Local Dream**\'s models, and Local Dream isn\'t installed. Get it from '
-                  'github.com/xororz/local-dream/releases, download a model in it (for example Illustrious v16 DMD2), '
-                  'move its models to Download/LocalDream (⋮ → Settings → Model storage → Downloads), then send your prompt again.');
-          yield const StreamDoneEvent();
-        case ImageEngineAction.none:
-          yield StreamErrorEvent(e.message);
+      if (e.notReady) {
+        // Take the person straight to where the model is picked.
+        final opened = await LocalDreamBridge.open();
+        yield TextDeltaEvent(opened
+            ? '🎨 Images are made by **Local Dream** on this phone, and it has no model open yet. '
+                'I\'ve opened it for you: tap a model (for example **Illustrious v16 DMD2** or '
+                '**CyberRealistic v10 DMD2**), wait until it has loaded, then come back and send your prompt again.'
+            : '🎨 Images are made by **Local Dream**, a free app that runs image models on your phone\'s AI chip. '
+                'It isn\'t installed. Get it from github.com/xororz/local-dream/releases, download a model in it, '
+                'open the model, then send your prompt again.');
+        yield const StreamDoneEvent();
+      } else {
+        yield StreamErrorEvent(e.message);
       }
     } catch (e) {
       stopwatch.stop();
