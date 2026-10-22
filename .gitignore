@@ -48,3 +48,7 @@ app.*.map.json
 
 android/key.properties
 android/app/upload-keystore.jks
+
+# Local Dream's engine and NPU runtime: added by the CI workflow, never committed.
+/android/app/src/main/jniLibs/arm64-v8a/libstable_diffusion_core.so
+/android/app/src/main/assets/qnnlibs/

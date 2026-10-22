@@ -18,6 +18,34 @@ class MainActivity : FlutterActivity() {
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
 
+        // On-device image engine (Local Dream's), see ImageEngine.
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "com.pocketstrike.app/imageengine")
+            .setMethodCallHandler { call, result ->
+                when (call.method) {
+                    "isBundled" -> result.success(ImageEngine.isBundled(applicationContext))
+                    "hasFilesAccess" -> result.success(ImageEngine.hasFilesAccess())
+                    "openFilesAccessSettings" -> {
+                        ImageEngine.openFilesAccessSettings(this)
+                        result.success(true)
+                    }
+                    "listModels" -> result.success(ImageEngine.listModels())
+                    "status" -> result.success(ImageEngine.status())
+                    "start" -> {
+                        val id = call.argument<String>("model") ?: ""
+                        // Copying the NPU runtime takes a moment: keep it off the UI thread.
+                        Thread {
+                            val error = ImageEngine.start(applicationContext, id)
+                            runOnUiThread { result.success(error) }
+                        }.start()
+                    }
+                    "stop" -> {
+                        ImageEngine.stop()
+                        result.success(true)
+                    }
+                    else -> result.notImplemented()
+                }
+            }
+
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL).setMethodCallHandler { call, result ->
             when (call.method) {
                 "saveImageToGallery" -> {

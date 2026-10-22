@@ -35,6 +35,23 @@ jobs:
       - name: Pub get
         run: flutter pub get
 
+      # Local Dream's image engine (github.com/xororz/local-dream by xororz,
+      # CC BY-NC 4.0): its native engine plus Qualcomm's NPU runtime for
+      # Snapdragon 8 Elite (V79) and 8 Elite Gen 5 (V81), taken from the
+      # pinned 2.8.1 release, so PocketStrike can run Local Dream's models
+      # itself. Never committed; PocketStrike must stay free and credit it.
+      - name: Bundle Local Dream's image engine
+        run: |
+          curl -fsSL -o "$RUNNER_TEMP/ld.apk" \
+            https://github.com/xororz/local-dream/releases/download/v2.8.1/LocalDream_armv8a_2.8.1.apk
+          echo "c8ba61769564ed13bcfb7e13cc48bb3bf6e3f9fd26db132a0bb2d6aa00a31edb  $RUNNER_TEMP/ld.apk" | sha256sum -c -
+          mkdir -p android/app/src/main/jniLibs/arm64-v8a android/app/src/main/assets/qnnlibs
+          unzip -o -j "$RUNNER_TEMP/ld.apk" lib/arm64-v8a/libstable_diffusion_core.so \
+            -d android/app/src/main/jniLibs/arm64-v8a
+          unzip -o -j "$RUNNER_TEMP/ld.apk" 'assets/qnnlibs/libQnnHtp.so' 'assets/qnnlibs/libQnnSystem.so' \
+            'assets/qnnlibs/libQnnHtpV79*' 'assets/qnnlibs/libQnnHtpV81*' -d android/app/src/main/assets/qnnlibs
+          ls -la android/app/src/main/jniLibs/arm64-v8a android/app/src/main/assets/qnnlibs
+
       - name: Decode keystore
         if: ${{ env.KEYSTORE_BASE64 != '' }}
         run: echo "$KEYSTORE_BASE64" | base64 -d > android/app/upload-keystore.jks
