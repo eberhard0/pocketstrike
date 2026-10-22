@@ -108,6 +108,18 @@ class MainActivity : FlutterActivity() {
                         result.error("EXCEPTION", e.localizedMessage ?: "Unknown error", null)
                     }
                 }
+                "openApp" -> {
+                    // Opens another app by package name (used for Local Dream). False when not installed.
+                    val pkg = call.argument<String>("package")
+                    val launch = pkg?.let { packageManager.getLaunchIntentForPackage(it) }
+                    if (launch == null) {
+                        result.success(false)
+                    } else {
+                        launch.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                        startActivity(launch)
+                        result.success(true)
+                    }
+                }
                 "scanFilePath" -> {
                     val filePath = call.argument<String>("filePath")
                     if (filePath != null) {

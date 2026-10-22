@@ -138,7 +138,7 @@ class ExtraAgentTools {
   static AgentTool generateImage() => AgentTool(
         name: 'generate_image',
         description:
-            'Generates high-quality 1:1 square AI artwork, photorealistic photos, wallpapers, drawings, and visual scenes using the FLUX.1 neural diffusion engine. '
+            'Generates 1:1 square AI artwork, photos, wallpapers, drawings and visual scenes on this phone with Local Dream (Stable Diffusion on the NPU). '
             'Always call this tool whenever the user asks to generate, create, draw, paint, design, visualize, or render an image, artwork, illustration, photo, or wallpaper. All images are generated in square 1:1 format.',
         inputSchema: const {
           'type': 'object',
@@ -164,6 +164,7 @@ class ExtraAgentTools {
             );
             return 'Image successfully generated and rendered directly in chat.\n![Generated Image](file://${file.path})';
           } catch (e) {
+            // e.g. "Local Dream has no model open. Open Local Dream, tap a model…"
             return 'Failed to generate image: $e';
           }
         },
