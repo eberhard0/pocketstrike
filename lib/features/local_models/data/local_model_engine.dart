@@ -6,6 +6,7 @@ import 'package:llama_flutter_android/llama_flutter_android.dart' as llama;
 import 'package:pocketstrike/core/models/chat_models.dart';
 import 'package:pocketstrike/features/local_models/data/local_dream_bridge.dart';
 import 'package:pocketstrike/features/local_models/data/local_model_info.dart';
+import 'package:pocketstrike/features/local_models/data/pc_image_engine.dart';
 import 'package:pocketstrike/features/providers/domain/ai_provider.dart';
 
 /// Formatter for prompt formatting across popular local LLM architectures.
@@ -621,6 +622,11 @@ class LocalAIProvider implements AIProvider {
       } else {
         yield StreamErrorEvent(e.message);
       }
+    } on PcImageException catch (e) {
+      stopwatch.stop();
+      yield TextDeltaEvent('🖥️ ${e.message}'
+          '${e.setup ? '' : '\n\nTo use the phone instead: Settings → Image engine → This phone.'}');
+      yield const StreamDoneEvent();
     } catch (e) {
       stopwatch.stop();
       yield StreamErrorEvent('Could not make the image: $e');
@@ -628,11 +634,20 @@ class LocalAIProvider implements AIProvider {
   }
 
   /// Makes a picture from a prompt (used by chat and the agent's image tool).
-  /// It runs in Local Dream on this phone's NPU; see [LocalDreamBridge].
+  /// Settings → Image engine picks where: Local Dream on this phone's NPU
+  /// ([LocalDreamBridge]) or the office PC's graphics card ([PcImageEngine]).
   static Future<File> synthesizeImageDirect({
     required String prompt,
     String aspectRatio = '1:1',
     void Function(int step, int total)? onProgress,
-  }) =>
-      LocalDreamBridge.generate(prompt: prompt, aspectRatio: aspectRatio, onProgress: onProgress);
+  }) async {
+    if (await PcImageEngine.engine() == ImageEngineChoice.pc) {
+      return PcImageEngine.generate(
+        prompt: prompt,
+        aspectRatio: aspectRatio,
+        onProgress: onProgress == null ? null : (p, _) => onProgress((p * 100).round(), 100),
+      );
+    }
+    return LocalDreamBridge.generate(prompt: prompt, aspectRatio: aspectRatio, onProgress: onProgress);
+  }
 }

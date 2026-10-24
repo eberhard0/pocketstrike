@@ -1,0 +1,39 @@
+[
+  {
+    "id": "illustrious_xl",
+    "name": "Illustrious XL (anime)",
+    "kind": "anime",
+    "checkpoint": "illustriousXL_v20.safetensors",
+    "size": 1024,
+    "steps": 28,
+    "cfg": 5.5,
+    "sampler": "euler_ancestral",
+    "scheduler": "normal",
+    "prefix": "masterpiece, best quality, very aesthetic",
+    "negative": "lowres, worst quality, low quality, bad anatomy, bad hands, extra fingers, watermark, signature, text"
+  },
+  {
+    "id": "cyberrealistic_xl",
+    "name": "CyberRealistic XL (photo)",
+    "kind": "photo",
+    "checkpoint": "cyberrealisticXL_v60.safetensors",
+    "size": 1024,
+    "steps": 30,
+    "cfg": 4.5,
+    "sampler": "dpmpp_2m",
+    "scheduler": "karras",
+    "negative": "cartoon, anime, illustration, painting, lowres, blurry, deformed, bad anatomy, watermark, text"
+  },
+  {
+    "id": "flux_schnell",
+    "name": "Flux.1 schnell (general, fast)",
+    "kind": "general",
+    "checkpoint": "flux1-schnell-fp8.safetensors",
+    "size": 1024,
+    "steps": 4,
+    "cfg": 1.0,
+    "sampler": "euler",
+    "scheduler": "simple",
+    "negative": ""
+  }
+]
