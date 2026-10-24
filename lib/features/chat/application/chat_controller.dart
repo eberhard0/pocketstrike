@@ -4,6 +4,7 @@ import 'package:dio/dio.dart';
 import 'package:drift/drift.dart' hide Column;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pocketstrike/app/theme/theme_controller.dart';
+import 'package:pocketstrike/features/skills/data/skill_library.dart';
 import 'package:pocketstrike/core/db/app_database.dart';
 import 'package:pocketstrike/core/models/chat_models.dart';
 import 'package:pocketstrike/features/agent/data/agent_engine.dart';
@@ -776,6 +777,19 @@ class ChatController extends StateNotifier<ChatState> {
           : '$systemPrompt\n\n$hermesContext';
     } else if (systemPrompt.isEmpty) {
       systemPrompt = 'You are PocketStrike AI, a helpful, intelligent, and concise assistant.';
+    }
+
+    // A loaded red-team skill (claude-red) primes the model for the current
+    // attack surface. Matched on the most recent user turn.
+    final lastUser = chatMsgs.lastWhere(
+      (m) => m.role == MessageRole.user,
+      orElse: () => ChatMessage(id: '', role: MessageRole.user, content: '', createdAt: DateTime.now()),
+    );
+    final skill = await SkillLibrary.select(lastUser.content);
+    SkillLibrary.active.value = skill;
+    if (skill != null) {
+      final block = await SkillLibrary.promptBlock(skill);
+      systemPrompt = systemPrompt.isEmpty ? block : '$systemPrompt\n\n$block';
     }
 
     if (state.agentMode) {

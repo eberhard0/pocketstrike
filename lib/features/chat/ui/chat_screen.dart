@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pocketstrike/app/router.dart';
 import 'package:pocketstrike/app/theme/glass_tokens.dart';
+import 'package:pocketstrike/features/skills/data/skill_library.dart';
 import 'package:pocketstrike/core/db/app_database.dart';
 import 'package:pocketstrike/shared/widgets/app_icons.dart';
 import 'package:pocketstrike/shared/widgets/confirm_action_sheet.dart';
@@ -383,6 +384,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                         ],
                       ),
           ),
+          const _ActiveSkillChip(),
           ChatInputBar(enabled: inputEnabled),
         ],
       ),
@@ -1076,3 +1078,35 @@ class _ImageGenerationLoadingCardState
 }
 
 
+/// A small line above the input showing which red-team skill is loaded.
+class _ActiveSkillChip extends StatelessWidget {
+  const _ActiveSkillChip();
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.glass;
+    return ValueListenableBuilder<SkillInfo?>(
+      valueListenable: SkillLibrary.active,
+      builder: (context, skill, _) {
+        if (skill == null) return const SizedBox.shrink();
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.verified_user_outlined, size: 13, color: tokens.accent),
+              const SizedBox(width: 5),
+              Flexible(
+                child: Text(
+                  'Skill: ${skill.title}',
+                  style: TextStyle(fontSize: 11, color: tokens.textSecondary),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}

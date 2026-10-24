@@ -7,6 +7,7 @@ import 'package:pocketstrike/app/theme/glass_tokens.dart';
 import 'package:pocketstrike/app/theme/theme_controller.dart';
 import 'package:pocketstrike/shared/widgets/app_icons.dart';
 import 'package:pocketstrike/features/settings/ui/personas_sheet.dart';
+import 'package:pocketstrike/features/settings/ui/skills_sheet.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 /// Main settings menu grouping all app configurations into sleek glass tiles.
@@ -77,6 +78,12 @@ class SettingsScreen extends ConsumerWidget {
             title: 'System Personas',
             subtitle: 'General, Coding, Research & custom AI personas',
             onTap: () => PersonasSheet.show(context),
+          ),
+          _SettingsTile(
+            icon: AppIcons.shieldCheck,
+            title: 'Red Team Skills',
+            subtitle: '79 claude-red offensive-security skills (authorized use)',
+            onTap: () => SkillsSheet.show(context),
           ),
           _SettingsTile(
             icon: AppIcons.sparkles,
