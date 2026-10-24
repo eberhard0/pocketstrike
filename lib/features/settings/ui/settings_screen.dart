@@ -81,7 +81,7 @@ class SettingsScreen extends ConsumerWidget {
           ),
           _SettingsTile(
             icon: AppIcons.shieldCheck,
-            title: 'Red Team Skills',
+            title: 'Hack Team Skills',
             subtitle: '79 claude-red offensive-security skills (authorized use)',
             onTap: () => SkillsSheet.show(context),
           ),

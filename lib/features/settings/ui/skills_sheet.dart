@@ -70,7 +70,7 @@ class _SkillsSheetState extends State<SkillsSheet> {
         children: [
           Icon(AppIcons.shieldCheck, color: tokens.accent, size: 20),
           const SizedBox(width: 8),
-          Text('Red team skills', style: theme.textTheme.titleMedium?.copyWith(fontSize: 16)),
+          Text('Hack Team skills', style: theme.textTheme.titleMedium?.copyWith(fontSize: 16)),
           const Spacer(),
           IconButton(icon: const Icon(Icons.close, size: 20), onPressed: () => Navigator.pop(context)),
         ],
@@ -84,7 +84,7 @@ class _SkillsSheetState extends State<SkillsSheet> {
       SwitchListTile(
         value: _enabled,
         contentPadding: EdgeInsets.zero,
-        title: const Text('Use red team skills'),
+        title: const Text('Use Hack Team skills'),
         onChanged: (v) async {
           await SkillLibrary.setEnabled(v);
           setState(() => _enabled = v);

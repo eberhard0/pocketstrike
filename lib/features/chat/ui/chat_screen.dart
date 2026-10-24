@@ -1078,7 +1078,7 @@ class _ImageGenerationLoadingCardState
 }
 
 
-/// A small line above the input showing which red-team skill is loaded.
+/// A small line above the input showing which Hack Team skill is loaded.
 class _ActiveSkillChip extends StatelessWidget {
   const _ActiveSkillChip();
 
