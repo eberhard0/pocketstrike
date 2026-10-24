@@ -668,7 +668,9 @@ class LocalModelStoreNotifier extends Notifier<LocalModelState> {
     await _saveModels(updated);
   }
 
-  /// Deletes an imported model from the list.
+  /// Removes a model's downloaded file to free space. A preset (one with a
+  /// download URL) stays in the list afterwards so it can be downloaded again;
+  /// only a custom import, which can't be fetched back, leaves the list.
   Future<void> deleteModel(String modelId) async {
     if (state.activeModelId == modelId) {
       try {
@@ -676,9 +678,41 @@ class LocalModelStoreNotifier extends Notifier<LocalModelState> {
       } catch (_) {}
     }
 
-    final updated = state.models.where((m) => m.id != modelId).toList();
+    LocalModelInfo? model;
+    for (final m in state.models) {
+      if (m.id == modelId) {
+        model = m;
+        break;
+      }
+    }
+
+    // Delete the GGUF from disk — this is what actually frees the space.
+    if (model != null) {
+      for (final path in {model.filePath, '/storage/emulated/0/Download/${model.name}'}) {
+        try {
+          final f = File(path);
+          if (f.existsSync()) f.deleteSync();
+        } catch (_) {}
+      }
+    }
+
+    final isPreset = model != null &&
+        (defaultPresetModels.any((p) => p.id == modelId) ||
+            (model.downloadUrl != null && model.downloadUrl!.isNotEmpty));
+
+    final List<LocalModelInfo> updated;
+    if (isPreset) {
+      // Keep the entry (with its download URL); the file is gone, so it now
+      // shows as not downloaded and can be downloaded again.
+      updated = state.models
+          .map((m) => m.id == modelId ? m.copyWith(isLoadedInRam: false) : m)
+          .toList();
+    } else {
+      updated = state.models.where((m) => m.id != modelId).toList();
+    }
+
     final newActiveId = state.activeModelId == modelId
-        ? (updated.firstOrNull?.id)
+        ? (updated.where((m) => m.isDownloaded).firstOrNull?.id ?? updated.firstOrNull?.id)
         : state.activeModelId;
 
     state = state.copyWith(

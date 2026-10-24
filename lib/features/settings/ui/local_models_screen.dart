@@ -1122,9 +1122,13 @@ class _LocalModelsScreenState extends ConsumerState<LocalModelsScreen> {
                 child: TextButton.icon(
                   icon: Icon(AppIcons.trash,
                       size: 13, color: Colors.redAccent),
-                  label: const Text(
-                    'Remove Model',
-                    style: TextStyle(
+                  label: Text(
+                    // A preset can be re-downloaded, so this only clears its
+                    // file; a custom import is gone for good.
+                    (model.downloadUrl != null && model.downloadUrl!.isNotEmpty)
+                        ? 'Remove Download'
+                        : 'Delete Model',
+                    style: const TextStyle(
                       fontSize: 11,
                       color: Colors.redAccent,
                     ),
