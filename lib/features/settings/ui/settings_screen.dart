@@ -7,7 +7,6 @@ import 'package:pocketstrike/app/theme/glass_tokens.dart';
 import 'package:pocketstrike/app/theme/theme_controller.dart';
 import 'package:pocketstrike/shared/widgets/app_icons.dart';
 import 'package:pocketstrike/features/settings/ui/personas_sheet.dart';
-import 'package:pocketstrike/features/settings/ui/image_engine_sheet.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 /// Main settings menu grouping all app configurations into sleek glass tiles.
@@ -66,12 +65,6 @@ class SettingsScreen extends ConsumerWidget {
             title: 'Local & Offline Models',
             subtitle: 'Import GGUF LLMs, image models & load to RAM',
             onTap: () => context.push(AppRoutes.settingsLocalModels),
-          ),
-          _SettingsTile(
-            icon: AppIcons.image,
-            title: 'Image engine',
-            subtitle: 'This phone (Local Dream) or the office PC\'s graphics card',
-            onTap: () => ImageEngineSheet.show(context),
           ),
           _SettingsTile(
             icon: AppIcons.cpu,
