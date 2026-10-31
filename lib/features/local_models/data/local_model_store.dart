@@ -154,6 +154,60 @@ class LocalModelStoreNotifier extends Notifier<LocalModelState> {
           importedAt: DateTime.now(),
         ),
 
+        LocalModelInfo(
+          id: 'preset_llama_32_3b_uncensored',
+          name: 'Llama-3.2-3B-Instruct-abliterated.Q4_K_M.gguf',
+          filePath: '/storage/emulated/0/Download/Llama-3.2-3B-Instruct-abliterated.Q4_K_M.gguf',
+          downloadUrl: 'https://huggingface.co/QuantFactory/Llama-3.2-3B-Instruct-abliterated-GGUF/resolve/main/Llama-3.2-3B-Instruct-abliterated.Q4_K_M.gguf',
+          fileSizeBytes: 2019377472, // ~1.9 GB
+          type: LocalModelType.uncensoredGguf,
+          quantization: 'Q4_K_M',
+          isLoadedInRam: false,
+          ramUsageMb: 2400,
+          contextSize: 4096,
+          threads: 4,
+          gpuLayers: 0,
+          description: '🔥 Abliterated Llama 3.2 3B. No refusals, fast on flagship phones.',
+          isDefault: false,
+          importedAt: DateTime.now(),
+        ),
+
+        LocalModelInfo(
+          id: 'preset_qwen3_4b_uncensored',
+          name: 'Qwen3-4B-Instruct-2507-abliterated.Q4_K_M.gguf',
+          filePath: '/storage/emulated/0/Download/Qwen3-4B-Instruct-2507-abliterated.Q4_K_M.gguf',
+          downloadUrl: 'https://huggingface.co/mradermacher/Qwen3-4B-Instruct-2507-abliterated-GGUF/resolve/main/Qwen3-4B-Instruct-2507-abliterated.Q4_K_M.gguf',
+          fileSizeBytes: 2497280128, // ~2.3 GB
+          type: LocalModelType.uncensoredGguf,
+          quantization: 'Q4_K_M',
+          isLoadedInRam: false,
+          ramUsageMb: 3000,
+          contextSize: 4096,
+          threads: 4,
+          gpuLayers: 0,
+          description: '🔥 Abliterated Qwen3 4B Instruct. Strongest uncensored reasoning and code here.',
+          isDefault: false,
+          importedAt: DateTime.now(),
+        ),
+
+        LocalModelInfo(
+          id: 'preset_gemma3_4b_uncensored',
+          name: 'gemma-3-4b-it-abliterated.q4_k_m.gguf',
+          filePath: '/storage/emulated/0/Download/gemma-3-4b-it-abliterated.q4_k_m.gguf',
+          downloadUrl: 'https://huggingface.co/mlabonne/gemma-3-4b-it-abliterated-GGUF/resolve/main/gemma-3-4b-it-abliterated.q4_k_m.gguf',
+          fileSizeBytes: 2489894016, // ~2.3 GB
+          type: LocalModelType.uncensoredGguf,
+          quantization: 'Q4_K_M',
+          isLoadedInRam: false,
+          ramUsageMb: 3000,
+          contextSize: 4096,
+          threads: 4,
+          gpuLayers: 0,
+          description: '🔥 Abliterated Gemma 3 4B. Natural writing, good Indonesian and English.',
+          isDefault: false,
+          importedAt: DateTime.now(),
+        ),
+
         // ==================== 💬 STANDARD CHAT & REASONING SLMS ====================
         LocalModelInfo(
           id: 'preset_qwen25_05b',
