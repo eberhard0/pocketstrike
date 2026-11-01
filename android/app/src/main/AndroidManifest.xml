@@ -50,6 +50,10 @@
                 android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
                 android:value="Autonomous AI Agent telegram message relay and scheduled cron triggers." />
         </service>
+        <service
+            android:name=".DownloadKeepAliveService"
+            android:foregroundServiceType="dataSync"
+            android:exported="false" />
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"

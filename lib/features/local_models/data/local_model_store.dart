@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:pocketstrike/core/services/notification_service.dart';
@@ -481,10 +482,16 @@ class LocalModelStoreNotifier extends Notifier<LocalModelState> {
 
     if (!canWriteExternal) {
       final docDir = await getApplicationDocumentsDirectory();
+      _docsPath = docDir.path;
       targetPath = '${docDir.path}/${model.name}';
     }
 
     final tempPath = '$targetPath.part';
+
+    // Without this, Android freezes the app (and the download) soon after the screen goes off.
+    try {
+      await _downloadChannel.invokeMethod('keepAlive', {'title': 'Downloading ${model.name}'});
+    } catch (_) {}
 
     try {
       final dio = Dio(
@@ -502,41 +509,55 @@ class LocalModelStoreNotifier extends Notifier<LocalModelState> {
       );
       int lastNotifUpdate = 0;
 
-      await dio.download(
-        url,
-        tempPath,
-        cancelToken: cancelToken,
-        onReceiveProgress: (received, total) {
-          if (total <= 0) {
-            total = model.fileSizeBytes > 0
-                ? model.fileSizeBytes
-                : 150 * 1024 * 1024;
-          }
-          final progress = (received / total).clamp(0.0, 1.0);
-          final recMb = (received / (1024 * 1024)).toStringAsFixed(1);
-          final totMb = (total / (1024 * 1024)).toStringAsFixed(1);
-          final statusStr =
-              '${(progress * 100).toStringAsFixed(0)}% • $recMb MB / $totMb MB';
+      void report(int received, int total) {
+        if (total <= 0) {
+          total = model.fileSizeBytes > 0
+              ? model.fileSizeBytes
+              : 150 * 1024 * 1024;
+        }
+        final progress = (received / total).clamp(0.0, 1.0);
+        final recMb = (received / (1024 * 1024)).toStringAsFixed(1);
+        final totMb = (total / (1024 * 1024)).toStringAsFixed(1);
+        final statusStr =
+            '${(progress * 100).toStringAsFixed(0)}% • $recMb MB / $totMb MB';
 
-          state = state.copyWith(
-            downloadProgress: {...state.downloadProgress, model.id: progress},
-            downloadStatus: {...state.downloadStatus, model.id: statusStr},
+        state = state.copyWith(
+          downloadProgress: {...state.downloadProgress, model.id: progress},
+          downloadStatus: {...state.downloadStatus, model.id: statusStr},
+        );
+
+        final now = DateTime.now().millisecondsSinceEpoch;
+        if (now - lastNotifUpdate > 800 || progress >= 0.99) {
+          lastNotifUpdate = now;
+          notifService.showDownloadProgress(
+            id: notifId,
+            title: 'PocketStrike: Downloading ${model.name}',
+            body: statusStr,
+            progress: (progress * 100).toInt(),
+            maxProgress: 100,
+            ongoing: true,
           );
+        }
+      }
 
-          final now = DateTime.now().millisecondsSinceEpoch;
-          if (now - lastNotifUpdate > 800 || progress >= 0.99) {
-            lastNotifUpdate = now;
-            notifService.showDownloadProgress(
-              id: notifId,
-              title: 'PocketStrike: Downloading ${model.name}',
-              body: statusStr,
-              progress: (progress * 100).toInt(),
-              maxProgress: 100,
-              ongoing: true,
-            );
+      // A dropped connection resumes from the .part file instead of starting over.
+      for (var attempt = 0;; attempt++) {
+        try {
+          await _fetchResumable(dio, url, File(tempPath), cancelToken, report);
+          break;
+        } catch (e) {
+          if (cancelToken.isCancelled || attempt >= _maxRetries || !_isRetryable(e)) {
+            rethrow;
           }
-        },
-      );
+          state = state.copyWith(
+            downloadStatus: {
+              ...state.downloadStatus,
+              model.id: 'Connection lost — resuming (${attempt + 1}/$_maxRetries)…',
+            },
+          );
+          await Future<void>.delayed(Duration(seconds: 3 * (attempt + 1)));
+        }
+      }
 
       // Finalize file
       final tempFile = File(tempPath);
@@ -578,27 +599,121 @@ class LocalModelStoreNotifier extends Notifier<LocalModelState> {
 
       await _saveModels(updated);
     } catch (e) {
+      // The .part file stays, so the next tap on Download resumes from here.
       if (cancelToken.isCancelled) {
         state = state.copyWith(
           clearDownloadingId: true,
-          downloadStatus: {...state.downloadStatus, model.id: 'Cancelled'},
+          downloadStatus: {...state.downloadStatus, model.id: 'Paused'},
         );
       } else {
         state = state.copyWith(
           clearDownloadingId: true,
-          errorMessage: 'Download failed: $e',
-          downloadStatus: {...state.downloadStatus, model.id: 'Failed'},
+          errorMessage: 'Download stopped: $e\nTap Resume to continue where it left off.',
+          downloadStatus: {...state.downloadStatus, model.id: 'Stopped'},
         );
       }
-      try {
-        final tempFile = File(tempPath);
-        if (tempFile.existsSync()) tempFile.deleteSync();
-      } catch (_) {}
       await notifService.cancelNotification(notifId);
     } finally {
       _cancelTokens.remove(model.id);
+      if (_cancelTokens.isEmpty) {
+        try {
+          await _downloadChannel.invokeMethod('release');
+        } catch (_) {}
+      }
     }
   }
+
+  static const _downloadChannel = MethodChannel('com.pocketstrike.app/download');
+
+  static const _maxRetries = 5;
+
+  /// Network trouble is worth another try; a missing file or a refused request isn't.
+  static bool _isRetryable(Object e) {
+    if (e is DioException) {
+      final code = e.response?.statusCode;
+      return code == null || code >= 500 || code == 408 || code == 429;
+    }
+    return e is SocketException || e is HttpException || e is FileSystemException;
+  }
+
+  /// Fetches [url] into [part], continuing from its current length with a Range request.
+  /// A server that ignores the range (200) gets the file written from the start again.
+  static Future<void> _fetchResumable(
+    Dio dio,
+    String url,
+    File part,
+    CancelToken cancelToken,
+    void Function(int received, int total) onProgress,
+  ) async {
+    var have = part.existsSync() ? part.lengthSync() : 0;
+    final response = await dio.get<ResponseBody>(
+      url,
+      cancelToken: cancelToken,
+      options: Options(
+        responseType: ResponseType.stream,
+        headers: have > 0 ? {'Range': 'bytes=$have-'} : null,
+        validateStatus: (s) => s == 200 || s == 206 || s == 416,
+      ),
+    );
+    // 416: nothing left past what we have, so the file is already complete.
+    if (response.statusCode == 416) return;
+    final resumed = response.statusCode == 206;
+    if (!resumed) have = 0;
+    final length = int.tryParse(
+            response.headers.value(Headers.contentLengthHeader) ?? '') ??
+        -1;
+    final total = length >= 0 ? have + length : -1;
+
+    final sink = part.openWrite(mode: resumed ? FileMode.append : FileMode.write);
+    var received = have;
+    onProgress(received, total);
+    try {
+      await for (final chunk in response.data!.stream) {
+        sink.add(chunk);
+        received += chunk.length;
+        onProgress(received, total);
+      }
+    } finally {
+      await sink.flush();
+      await sink.close();
+    }
+    if (total > 0 && received < total) {
+      throw const HttpException('Connection closed before the download finished');
+    }
+  }
+
+  /// Bytes already saved by an unfinished download (0 when there is none).
+  int partialBytes(LocalModelInfo model) {
+    for (final path in _partialPaths(model)) {
+      try {
+        final f = File(path);
+        if (f.existsSync()) return f.lengthSync();
+      } catch (_) {}
+    }
+    return 0;
+  }
+
+  /// Deletes an unfinished download.
+  void discardPartial(LocalModelInfo model) {
+    for (final path in _partialPaths(model)) {
+      try {
+        final f = File(path);
+        if (f.existsSync()) f.deleteSync();
+      } catch (_) {}
+    }
+    state = state.copyWith(
+      downloadProgress: {...state.downloadProgress, model.id: 0},
+      downloadStatus: {...state.downloadStatus, model.id: ''},
+    );
+  }
+
+  Set<String> _partialPaths(LocalModelInfo model) => {
+        '/storage/emulated/0/Download/${model.name}.part',
+        if (_docsPath != null) '$_docsPath/${model.name}.part',
+      };
+
+  /// App documents folder, the fallback download location when Download isn't writable.
+  static String? _docsPath;
 
   /// Cancels an in-progress model download.
   void cancelDownload(String modelId) {
@@ -742,7 +857,11 @@ class LocalModelStoreNotifier extends Notifier<LocalModelState> {
 
     // Delete the GGUF from disk — this is what actually frees the space.
     if (model != null) {
-      for (final path in {model.filePath, '/storage/emulated/0/Download/${model.name}'}) {
+      for (final path in {
+        model.filePath,
+        '/storage/emulated/0/Download/${model.name}',
+        ..._partialPaths(model),
+      }) {
         try {
           final f = File(path);
           if (f.existsSync()) f.deleteSync();

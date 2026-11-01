@@ -139,6 +139,25 @@ class MainActivity : FlutterActivity() {
                 }
             }
         }
+
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "com.pocketstrike.app/download").setMethodCallHandler { call, result ->
+            when (call.method) {
+                "keepAlive" -> {
+                    try {
+                        DownloadKeepAliveService.start(applicationContext, call.argument<String>("title") ?: "Downloading a model")
+                        result.success(true)
+                    } catch (e: Exception) {
+                        // e.g. not allowed to start from the background: the download still runs while the app is open.
+                        result.success(false)
+                    }
+                }
+                "release" -> {
+                    DownloadKeepAliveService.stop(applicationContext)
+                    result.success(true)
+                }
+                else -> result.notImplemented()
+            }
+        }
     }
 
     private fun saveImageToMediaStore(bytes: ByteArray, fileName: String): String? {

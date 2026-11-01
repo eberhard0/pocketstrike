@@ -126,6 +126,9 @@ class _LocalModelsScreenState extends ConsumerState<LocalModelsScreen> {
           ),
           const SizedBox(height: 14),
 
+          _buildQuickStartCard(tokens),
+          const SizedBox(height: 14),
+
           // 2. Import Button
           OutlinedButton.icon(
             icon: Icon(AppIcons.upload, size: 16, color: tokens.accent),
@@ -466,6 +469,9 @@ class _LocalModelsScreenState extends ConsumerState<LocalModelsScreen> {
     final isDownloading = state.isDownloading(model.id);
     final downloadProgress = state.getProgress(model.id);
     final downloadStatus = state.getStatus(model.id);
+    final partial =
+        isDownloaded || isDownloading ? 0 : notifier.partialBytes(model);
+    final pick = _recommended[model.id];
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
@@ -503,6 +509,13 @@ class _LocalModelsScreenState extends ConsumerState<LocalModelsScreen> {
                         spacing: 4,
                         runSpacing: 2,
                         children: [
+                          if (pick != null)
+                            _buildTag(
+                              pick.$1,
+                              tokens,
+                              color: Colors.amber,
+                              bgColor: Colors.amber.withValues(alpha: 0.16),
+                            ),
                           if (model.isUncensored)
                             _buildTag(
                               '🔥 UNCENSORED',
@@ -644,7 +657,7 @@ class _LocalModelsScreenState extends ConsumerState<LocalModelsScreen> {
                       notifier.cancelDownload(model.id);
                     },
                     child: Text(
-                      'Cancel',
+                      'Pause',
                       style: TextStyle(
                         fontSize: 11,
                         color: Colors.redAccent.shade100,
@@ -665,7 +678,9 @@ class _LocalModelsScreenState extends ConsumerState<LocalModelsScreen> {
                 child: OutlinedButton.icon(
                   icon: Icon(AppIcons.download, size: 14, color: tokens.accent),
                   label: Text(
-                    '⬇ Download Model to Storage (${model.formattedSize})',
+                    partial > 0
+                        ? '⬇ Resume download (${_mb(partial)} of ${model.formattedSize})'
+                        : '⬇ Download Model to Storage (${model.formattedSize})',
                     style: TextStyle(
                       fontSize: 11.5,
                       fontWeight: FontWeight.bold,
@@ -688,6 +703,20 @@ class _LocalModelsScreenState extends ConsumerState<LocalModelsScreen> {
                   },
                 ),
               ),
+              if (partial > 0)
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton(
+                    onPressed: () {
+                      HapticFeedback.lightImpact();
+                      setState(() => notifier.discardPartial(model));
+                    },
+                    child: Text(
+                      'Discard partial download',
+                      style: TextStyle(fontSize: 11, color: tokens.textSecondary),
+                    ),
+                  ),
+                ),
             ],
 
             // Controls Row (When downloaded: Load/Unload, Set Active, Expand Config)
@@ -1139,6 +1168,92 @@ class _LocalModelsScreenState extends ConsumerState<LocalModelsScreen> {
                 ),
               ),
             ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// The picks for a flagship phone, shown as badges on their cards and in Quick start.
+  static const Map<String, (String, String)> _recommended = {
+    'preset_qwen3_4b_uncensored': (
+      '⭐ BEST OVERALL',
+      'Qwen3 4B — best answers, code and security questions',
+    ),
+    'preset_gemma3_4b_uncensored': (
+      '⭐ BEST INDONESIAN',
+      'Gemma 3 4B — most natural writing, best Bahasa Indonesia',
+    ),
+    'preset_llama_32_3b_uncensored': (
+      '⚡ FASTEST',
+      'Llama 3.2 3B — quickest replies (weak Indonesian)',
+    ),
+  };
+
+  static String _mb(int bytes) {
+    final mb = bytes / (1024 * 1024);
+    return mb >= 1024
+        ? '${(mb / 1024).toStringAsFixed(1)} GB'
+        : '${mb.toStringAsFixed(0)} MB';
+  }
+
+  Widget _buildQuickStartCard(GlassTokens tokens) {
+    final onSurface = Theme.of(context).colorScheme.onSurface;
+    Widget line(String text) => Padding(
+          padding: const EdgeInsets.only(bottom: 4),
+          child: Text(
+            text,
+            style: TextStyle(fontSize: 11.5, height: 1.35, color: onSurface),
+          ),
+        );
+    return GlassCard(
+      padding: const EdgeInsets.all(14),
+      child: Theme(
+        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+        child: ExpansionTile(
+          tilePadding: EdgeInsets.zero,
+          childrenPadding: EdgeInsets.zero,
+          initiallyExpanded: !ref.read(localModelStoreProvider).models.any((m) => m.isDownloaded),
+          leading: Icon(AppIcons.info, size: 18, color: tokens.accent),
+          title: Text(
+            'QUICK START',
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 0.8,
+              color: onSurface,
+            ),
+          ),
+          subtitle: Text(
+            'How to chat offline, and which model to pick',
+            style: TextStyle(fontSize: 11, color: tokens.textSecondary),
+          ),
+          expandedCrossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            line('1. On Wi-Fi, tap Download on a model below (it saves to your Download folder). '
+                'If the connection drops, it resumes by itself; if it stops, tap Resume.'),
+            line('2. When it shows ✓ Downloaded, tap Load into RAM.'),
+            line('3. Back in chat, pick Local in the mode bar and type. Nothing leaves the phone.'),
+            line('4. Security work: Settings → Hack Team Skills → Use Hack Team skills (authorized targets only).'),
+            const SizedBox(height: 8),
+            Text(
+              'RECOMMENDED',
+              style: TextStyle(
+                fontSize: 10.5,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 0.8,
+                color: Colors.amber,
+              ),
+            ),
+            const SizedBox(height: 4),
+            for (final pick in _recommended.values) line('• ${pick.$2}'),
+            const SizedBox(height: 4),
+            Text(
+              'Tips: keep one model in RAM at a time and Unload it when done to save battery. '
+              'Remove Download frees the space; you can download it again later. '
+              'All models reply in the language you write in.',
+              style: TextStyle(fontSize: 11, height: 1.35, color: tokens.textSecondary),
+            ),
           ],
         ),
       ),
