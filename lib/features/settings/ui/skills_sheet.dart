@@ -90,6 +90,7 @@ class _SkillsSheetState extends State<SkillsSheet> {
           setState(() => _enabled = v);
         },
       ),
+      _HowToUse(muted: muted, accent: tokens.accent),
     ];
 
     if (_enabled) {
@@ -190,6 +191,71 @@ class _SkillsSheetState extends State<SkillsSheet> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: children,
         ),
+      ),
+    );
+  }
+}
+
+/// A collapsible "How to use" guide shown under the Use-Hack-Team switch.
+class _HowToUse extends StatelessWidget {
+  const _HowToUse({required this.muted, required this.accent});
+
+  final TextStyle? muted;
+  final Color accent;
+
+  @override
+  Widget build(BuildContext context) {
+    final onSurface = Theme.of(context).colorScheme.onSurface;
+    Widget para(String text) => Padding(
+          padding: const EdgeInsets.only(bottom: 6),
+          child: Text(text, style: TextStyle(fontSize: 12.5, height: 1.35, color: onSurface)),
+        );
+    Widget keyword(String key, String what) => Padding(
+          padding: const EdgeInsets.only(bottom: 3),
+          child: RichText(
+            text: TextSpan(
+              style: TextStyle(fontSize: 12.5, height: 1.35, color: onSurface),
+              children: [
+                TextSpan(
+                  text: key,
+                  style: TextStyle(fontWeight: FontWeight.bold, color: accent),
+                ),
+                TextSpan(text: ' — $what'),
+              ],
+            ),
+          ),
+        );
+
+    return Theme(
+      data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+      child: ExpansionTile(
+        tilePadding: EdgeInsets.zero,
+        childrenPadding: const EdgeInsets.only(bottom: 4),
+        leading: Icon(AppIcons.info, size: 18, color: accent),
+        title: const Text('How to use', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+        expandedCrossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          para('Auto-match (default): leave the search box empty, close this sheet, and just '
+              'describe your task in chat. The best-fitting skill loads on its own.'),
+          para('Pin one: tap "Pin one", type a keyword in the search box to narrow the list, then '
+              'tap a skill. It stays active for every message until you change it.'),
+          const SizedBox(height: 4),
+          Text('FIND WEAK POINTS — keywords to pin',
+              style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.bold, letterSpacing: 0.6, color: accent)),
+          const SizedBox(height: 4),
+          keyword('recon', 'map the network and spot weak points (start here)'),
+          keyword('network', 'internal network and Wi-Fi'),
+          keyword('active directory', 'Windows logins and servers'),
+          keyword('web', 'the company website or web apps'),
+          keyword('api', 'app and mobile back-ends'),
+          keyword('cloud', 'AWS, Azure or Google Cloud'),
+          const SizedBox(height: 8),
+          para('Watching for a live breach (detecting an intruder) is a different, defensive job. '
+              'These are attack-side skills, so they do not monitor traffic — that needs tools on '
+              'the network itself, such as an IDS or a SIEM.'),
+          para('Only on a network you own or have written permission to test. Probing a network '
+              'without authorization is illegal, even to check if it is safe.'),
+        ],
       ),
     );
   }
