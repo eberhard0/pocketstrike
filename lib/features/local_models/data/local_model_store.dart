@@ -265,6 +265,24 @@ class LocalModelStoreNotifier extends Notifier<LocalModelState> {
         ),
 
         LocalModelInfo(
+          id: 'preset_qwen35_4b_3d_coder',
+          name: 'Qwen3.5-4B-3D-Coder-Q4_K_M.gguf',
+          filePath: '/storage/emulated/0/Download/Qwen3.5-4B-3D-Coder-Q4_K_M.gguf',
+          downloadUrl: 'https://huggingface.co/ccore/Qwen3.5-4B-3D-Coder/resolve/main/Qwen3.5-4B-3D-Coder-Q4_K_M.gguf',
+          fileSizeBytes: 2708804096, // ~2.6 GB
+          type: LocalModelType.chatGguf,
+          quantization: 'Q4_K_M',
+          isLoadedInRam: false,
+          ramUsageMb: 3200,
+          contextSize: 4096,
+          threads: 4,
+          gpuLayers: 0,
+          description: 'Generates interactive 3D web scenes as ready-to-use Three.js code. Ask for a scene; paste the code into an .html file to view it.',
+          isDefault: false,
+          importedAt: DateTime.now(),
+        ),
+
+        LocalModelInfo(
           id: 'preset_llama_32',
           name: 'Llama-3.2-3B-Instruct-Q4_K_M.gguf',
           filePath: '/storage/emulated/0/Download/Llama-3.2-3B-Instruct-Q4_K_M.gguf',
