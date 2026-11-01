@@ -1247,6 +1247,23 @@ class _LocalModelsScreenState extends ConsumerState<LocalModelsScreen> {
             ),
             const SizedBox(height: 4),
             for (final pick in _recommended.values) line('• ${pick.$2}'),
+            const SizedBox(height: 8),
+            Text(
+              'MAKING 3D SCENES',
+              style: TextStyle(
+                fontSize: 10.5,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 0.8,
+                color: Colors.amber,
+              ),
+            ),
+            const SizedBox(height: 4),
+            line('Download Qwen3.5-4B-3D-Coder, load it into RAM, and in Local chat '
+                'describe a scene (e.g. "a rotating solar system").'),
+            line('It replies with Three.js code. Copy that code into a file ending in '
+                '.html, then open the file in any web browser to see and move around '
+                'the 3D scene. It writes the code only — the scene does not play inside '
+                'PocketStrike.'),
             const SizedBox(height: 4),
             Text(
               'Tips: keep one model in RAM at a time and Unload it when done to save battery. '
